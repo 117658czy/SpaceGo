@@ -13,7 +13,7 @@ C++17 · CUDA · LibTorch · GTP · 约 5 万行自研代码
 [![GTP](https://img.shields.io/badge/Protocol-GTP-4B8BBE.svg)](src/network/protocol/gtp_protocol.cpp)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-**中文** · [English](README.en.md)
+**中文** · [English](README.en.md) · [项目主页](https://117658czy.github.io/SpaceGo/)
 
 [快速开始](#快速开始) · [核心算法](#核心算法与创新点) · [推理主链路](#推理主链路与模型文件) · [训练体系](#训练体系) · [实测数据](#实测数据与当前状态) · [路线图](#路线图与贡献方向)
 
