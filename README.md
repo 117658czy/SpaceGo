@@ -12,6 +12,7 @@ C++17 · CUDA · LibTorch · GTP · 约 5 万行自研代码
 [![LibTorch](https://img.shields.io/badge/LibTorch-2.6.0%2Bcu124-EE4C2C.svg)](CMakeLists.txt)
 [![GTP](https://img.shields.io/badge/Protocol-GTP-4B8BBE.svg)](src/network/protocol/gtp_protocol.cpp)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Website](https://img.shields.io/badge/Website-online-3ee08a.svg)](https://117658czy.github.io/SpaceGo/)
 
 **中文** · [English](README.en.md) · [项目主页](https://117658czy.github.io/SpaceGo/)
 
