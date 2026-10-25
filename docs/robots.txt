@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# SpaceGo 维空弈 项目主页
+Sitemap: https://117658czy.github.io/SpaceGo/sitemap.xml
