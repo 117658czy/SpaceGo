@@ -532,8 +532,9 @@ std::pair<std::vector<float>, float> DiploidTrainer::eval_search(
                         for (auto& v : out) v /= sum;
                     }
                     float val = value_ptr[i];
-                    // final_value为黑棋视角，转换为当前玩家视角（players: 1=黑, -1=白）
-                    if (players[i] == -1) {
+                    // final_value为黑棋视角，转换为行棋方视角
+                    // players: static_cast<int>(StoneColor)，BLACK=1 / WHITE=2
+                    if (is_white_player(players[i])) {
                         val = -val;
                     }
                     results.emplace_back(std::move(out), std::clamp(val, -1.0f, 1.0f));

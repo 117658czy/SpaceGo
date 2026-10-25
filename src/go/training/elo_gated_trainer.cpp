@@ -692,8 +692,9 @@ void EloGatedTrainer::init_searchers() {
                 torch::NoGradGuard no_grad;
                 auto result = locked_forward(model, state);
                 float value = result.final_value.to(torch::kCPU).item<float>();
-                // final_value为黑棋视角，转换为当前玩家视角（1=黑,-1=白）
-                if (current_player == -1) value = -value;
+                // 模型价值为黑棋视角；白方行棋时取反，转成搜索需要的行棋方视角。
+                // 原实现写 current_player == -1（WHITE实际是2，永不成立）→ 白方价值方向错误。
+                if (is_white_player(current_player)) value = -value;
                 return std::clamp(value, -1.0f, 1.0f);
             } catch (...) {
                 return 0.0f;
@@ -732,7 +733,8 @@ void EloGatedTrainer::init_searchers() {
                         for (auto& v : out) v /= sum;
                     }
                     float val = value_ptr[i];
-                    if (players[i] == -1) val = -val;
+                    // 黑棋视角 → 行棋方视角（与单步value_cb同一约定）
+                    if (is_white_player(players[i])) val = -val;
                     results.emplace_back(std::move(out), std::clamp(val, -1.0f, 1.0f));
                 }
             } catch (...) {
@@ -1334,11 +1336,10 @@ GameData EloGatedTrainer::generate_katago_selfplay_game(int game_id) {
         return game;
     }
 
-    // 价值填充：每步 = 该步行棋方视角的终局胜负（move_num偶数=黑先）
+    // 价值填充：全工程统一为黑棋视角，所有步都用同一个终局符号（不再按行棋方翻转）
     float sign = (margin > 1e-4f) ? 1.0f : ((margin < -1e-4f) ? -1.0f : 0.0f);  // 黑视角
     for (auto& s : game.steps) {
-        bool black_step = (s.move_number % 2 == 0);
-        s.value_target = black_step ? sign : -sign;
+        s.value_target = sign;
     }
     game.outcome = sign;
     game.game_length = move_num;
@@ -1374,7 +1375,9 @@ void EloGatedTrainer::compute_gae_for_game(GameData& game) {
         auto& s = game.steps[i];
         s.gae_advantage = gae_result.advantages[i];
         s.td_return = gae_result.returns[i];
-        s.value_target = gae_result.returns[i];  // TD目标作为价值目标
+        // GAE回报是行棋方视角；价值目标统一转成黑棋视角（偶数手=黑）
+        s.value_target = (s.move_number % 2 == 0) ? gae_result.returns[i]
+                                                  : -gae_result.returns[i];
         s.has_gae_signal = true;
     }
 }

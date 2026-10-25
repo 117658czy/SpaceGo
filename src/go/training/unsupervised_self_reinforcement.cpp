@@ -522,9 +522,9 @@ void SelfPlayGenerator::initialize_hmgs_search() {
                     for (auto& p : out) p /= sum;
                 }
 
-                // 同步缓存价值（黑棋视角 → 当前玩家视角），供value_cb直接命中
+                // 同步缓存价值（黑棋视角 → 行棋方视角），供value_cb直接命中
                 float value = result.final_value.to(torch::kCPU).item<float>();
-                if (current_player == -1) {
+                if (is_white_player(current_player)) {
                     value = -value;
                 }
                 nn_eval_cache_[board_state] = {out, std::clamp(value, -1.0f, 1.0f)};
@@ -557,9 +557,9 @@ void SelfPlayGenerator::initialize_hmgs_search() {
                 torch::NoGradGuard no_grad;
                 auto result = locked_forward(model, state);
                 float value = result.final_value.to(torch::kCPU).item<float>();
-                // final_value为黑棋视角（训练约定），转换为当前玩家视角
-                // current_player: 1=黑, -1=白（GoBoardCPU的StoneColor约定）
-                if (current_player == -1) {
+                // final_value为黑棋视角（训练约定），转换为行棋方视角
+                // current_player: static_cast<int>(StoneColor)，BLACK=1 / WHITE=2
+                if (is_white_player(current_player)) {
                     value = -value;
                 }
                 value = std::clamp(value, -1.0f, 1.0f);
@@ -609,9 +609,9 @@ void SelfPlayGenerator::initialize_hmgs_search() {
                         for (auto& v : out) v /= sum;
                     }
                     float val = value_ptr[i];
-                    // final_value为黑棋视角（训练约定），转换为当前玩家视角
-                    // players: 1=黑, -1=白（GoBoardCPU的StoneColor约定）
-                    if (players[i] == -1) {
+                    // final_value为黑棋视角（训练约定），转换为行棋方视角
+                    // players: static_cast<int>(StoneColor)，BLACK=1 / WHITE=2
+                    if (is_white_player(players[i])) {
                         val = -val;
                     }
                     results.emplace_back(std::move(out), std::clamp(val, -1.0f, 1.0f));
@@ -970,15 +970,18 @@ GameData SelfPlayGenerator::generate_game(int game_id) {
                         auto& s = game.steps[base_idx + aug];
                         s.gae_advantage = gae_result.advantages[gi];
                         s.td_return = gae_result.returns[gi];
-                        s.value_target = gae_result.returns[gi];  // TD目标作为价值目标
+                        // GAE回报是行棋方视角；价值目标统一转成黑棋视角（偶数手=黑）
+                        s.value_target = (s.move_number % 2 == 0) ? gae_result.returns[gi]
+                                                                  : -gae_result.returns[gi];
                         s.has_gae_signal = true;
                     }
                 }
             }
         } else {
-            // 传统模式：使用最终胜负作为价值目标
+            // 传统模式：使用最终胜负作为价值目标。
+            //   全工程统一为黑棋视角：game.outcome本身就是黑视角，所有步直接用，不翻转。
             for (auto& step : game.steps) {
-                step.value_target = (step.move_number % 2 == 0) ? game.outcome : -game.outcome;
+                step.value_target = game.outcome;
             }
         }
         

@@ -827,7 +827,7 @@ bool GoEngine::init_neural_engine() {
                 std::lock_guard<std::mutex> lock(g_nn_infer_mutex);
                 auto result = (*nn_model_)->forward(state);
                 float v = result.final_value.to(torch::kCPU).item<float>();
-                if (current_player == -1) v = -v;  // 模型价值为黑棋视角，-1=白需反转
+                if (is_white_player(current_player)) v = -v;  // 模型价值为黑棋视角，白方行棋需反转
                 return std::clamp(v, -1.0f, 1.0f);
             } catch (...) { return 0.0f; }
         };
@@ -863,7 +863,7 @@ bool GoEngine::init_neural_engine() {
                     }
                     if (sum > 1e-8f) for (auto& v : out) v /= sum;
                     float val = vp[i];
-                    if (players[i] == -1) val = -val;
+                    if (is_white_player(players[i])) val = -val;
                     results.emplace_back(std::move(out), std::clamp(val, -1.0f, 1.0f));
                 }
             } catch (...) {

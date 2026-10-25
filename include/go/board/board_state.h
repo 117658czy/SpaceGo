@@ -22,6 +22,15 @@ inline StoneColor opponent_color(StoneColor color) {
     return (color == StoneColor::BLACK) ? StoneColor::WHITE : StoneColor::BLACK;
 }
 
+// 价值视角约定（全工程统一）：模型 final_value 为"黑棋视角"（+1=黑胜，-1=白胜）。
+// 搜索把行棋方以 static_cast<int>(StoneColor) 传入回调（BLACK=1, WHITE=2）；
+// 转成"行棋方视角"只需在白方行棋时取反。
+// 集中到本函数，杜绝再写 current_player == -1 —— WHITE 的枚举值是 2，该判断永不成立，
+// 会让白方价值从未被正确转换（实测留出集上黑方行棋命中4.7%、白方79.6%，即模型被当成白视角）。
+inline bool is_white_player(int player) {
+    return player == static_cast<int>(StoneColor::WHITE);
+}
+
 #pragma warning(push)
 #pragma warning(disable: 4324)
 struct alignas(16) BoardState {
