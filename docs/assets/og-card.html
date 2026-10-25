@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<!--
+  社交预览图源文件（1200×630）
+  用途：截图导出 assets/og-cover.png，供 og:image / GitHub 仓库 Social preview 使用。
+  渲染方式：本地静态服务器 + 无头浏览器截图，固定视口 1200×630。
+-->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 1200px; height: 630px; overflow: hidden; }
+    body {
+      font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+      background:
+        radial-gradient(760px 420px at 84% -10%, rgba(62, 224, 138, 0.16), transparent 62%),
+        radial-gradient(620px 380px at 4% 20%, rgba(216, 178, 106, 0.10), transparent 60%),
+        #0a0f0d;
+      color: #e9f1ec;
+      /* 纵向弹性布局：内容居中偏上，指标行贴底，避免绝对定位在截图时被裁切 */
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 64px 64px 44px;
+      position: relative;
+    }
+
+    /* 右侧装饰棋盘 */
+    .board {
+      position: absolute;
+      right: 46px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 330px;
+      height: 330px;
+      border-radius: 18px;
+      background: linear-gradient(160deg, #1a2620, #0f1714);
+      border: 1px solid #2c4138;
+      padding: 12px;
+      box-shadow: 0 40px 80px -50px #000;
+    }
+    .board svg { display: block; width: 100%; height: 100%; border-radius: 10px; }
+
+    .content { position: relative; z-index: 2; max-width: 700px; }
+
+    .chips { display: flex; gap: 8px; margin-bottom: 22px; }
+    .chip {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 13px;
+      color: #93a79d;
+      border: 1px solid #2c4138;
+      border-radius: 999px;
+      padding: 4px 12px;
+    }
+    .chip-live { color: #3ee08a; border-color: #2aa869; }
+
+    h1 {
+      font-size: 62px;
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+      margin-bottom: 18px;
+    }
+    h1 .accent {
+      background: linear-gradient(96deg, #3ee08a, #b9e8a0 62%, #d8b26a);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .sub {
+      font-size: 21px;
+      line-height: 1.55;
+      color: #b7c7bf;
+      max-width: 620px;
+    }
+    .sub b { color: #e9f1ec; font-weight: 650; }
+
+    .meta {
+      margin-top: 30px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 15px;
+      color: #6b8177;
+    }
+    .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: #3c5148; }
+    .repo { color: #3ee08a; }
+
+    .stats {
+      display: flex;
+      gap: 34px;
+      z-index: 2;
+      position: relative;
+    }
+    .stat-value { font-family: ui-monospace, Consolas, monospace; font-size: 22px; font-weight: 700; }
+    .stat-value span { color: #3ee08a; }
+    .stat-label { font-size: 12px; color: #6b8177; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <div class="chips">
+      <span class="chip chip-live">● OPEN SOURCE · AGPL-3.0</span>
+      <span class="chip">C++17</span>
+      <span class="chip">CUDA</span>
+      <span class="chip">LibTorch</span>
+      <span class="chip">GTP</span>
+    </div>
+    <h1>SpaceGo <span class="accent">维空弈</span></h1>
+    <p class="sub">从零实现的 AlphaZero 式围棋引擎<br><b>HMGS-DP 搜索 × CA-MOE 8 专家网络 × 可复现训练闭环</b></p>
+    <div class="meta">
+      <span class="repo">github.com/117658czy/SpaceGo</span>
+      <span class="dot"></span>
+      <span>research prototype · honest benchmarks</span>
+    </div>
+  </div>
+
+  <!-- 装饰棋盘：与落地页保持同一视觉语言 -->
+  <div class="board">
+    <svg viewBox="0 0 300 300">
+      <defs>
+        <radialGradient id="wood" cx="35%" cy="20%" r="90%">
+          <stop offset="0%" stop-color="#e6c489"/>
+          <stop offset="55%" stop-color="#d5ab6a"/>
+          <stop offset="100%" stop-color="#bd9153"/>
+        </radialGradient>
+        <radialGradient id="bs" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#4b5551"/>
+          <stop offset="60%" stop-color="#1a2320"/>
+          <stop offset="100%" stop-color="#0a100e"/>
+        </radialGradient>
+        <radialGradient id="ws" cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="70%" stop-color="#eef3f0"/>
+          <stop offset="100%" stop-color="#c9d4ce"/>
+        </radialGradient>
+      </defs>
+      <rect width="300" height="300" rx="8" fill="url(#wood)"/>
+      <g stroke="#6b4b26" stroke-width="1" opacity="0.65">
+        <path d="M22 22h256M22 54h256M22 86h256M22 118h256M22 150h256M22 182h256M22 214h256M22 246h256M22 278h256"/>
+        <path d="M22 22v256M54 22v256M86 22v256M118 22v256M150 22v256M182 22v256M214 22v256M246 22v256M278 22v256"/>
+      </g>
+      <g fill="#6b4b26" opacity="0.85">
+        <circle cx="86" cy="86" r="2.6"/><circle cx="150" cy="86" r="2.6"/><circle cx="214" cy="86" r="2.6"/>
+        <circle cx="86" cy="150" r="2.6"/><circle cx="150" cy="150" r="2.6"/><circle cx="214" cy="150" r="2.6"/>
+        <circle cx="86" cy="214" r="2.6"/><circle cx="150" cy="214" r="2.6"/><circle cx="214" cy="214" r="2.6"/>
+      </g>
+      <g stroke="rgba(0,0,0,0.35)" stroke-width="1">
+        <circle cx="214" cy="86" r="12.5" fill="url(#bs)"/>
+        <circle cx="86" cy="214" r="12.5" fill="url(#ws)"/>
+        <circle cx="214" cy="214" r="12.5" fill="url(#bs)"/>
+        <circle cx="86" cy="86" r="12.5" fill="url(#ws)"/>
+        <circle cx="246" cy="54" r="12.5" fill="url(#bs)"/>
+        <circle cx="54" cy="246" r="12.5" fill="url(#ws)"/>
+        <circle cx="246" cy="246" r="12.5" fill="url(#bs)"/>
+        <circle cx="54" cy="54" r="12.5" fill="url(#ws)"/>
+        <circle cx="150" cy="150" r="12.5" fill="url(#ws)"/>
+        <circle cx="182" cy="150" r="12.5" fill="url(#bs)"/>
+        <circle cx="150" cy="118" r="12.5" fill="url(#ws)"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="stats">
+    <div>
+      <div class="stat-value">62<span>M</span></div>
+      <div class="stat-label">CA-MOE 参数 / params</div>
+    </div>
+    <div>
+      <div class="stat-value">50<span>k</span></div>
+      <div class="stat-label">行 C++/CUDA</div>
+    </div>
+    <div>
+      <div class="stat-value">4</div>
+      <div class="stat-label">训练模式 / modes</div>
+    </div>
+    <div>
+      <div class="stat-value">1600</div>
+      <div class="stat-label">模拟 / step</div>
+    </div>
+  </div>
+</body>
+</html>
