@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- SpaceGo 维空弈 favicon：木纹棋盘底 + 黑白一子 -->
+  <rect width="64" height="64" rx="14" fill="#0f1714"/>
+  <rect x="9" y="9" width="46" height="46" rx="4" fill="#d5ab6a"/>
+  <g stroke="#6b4b26" stroke-width="1.4" opacity="0.7">
+    <path d="M15 15h34M15 25h34M15 35h34M15 45h34M15 55h34M15 15v34M25 15v34M35 15v34M45 15v34M55 15v34"/>
+  </g>
+  <circle cx="25" cy="25" r="7" fill="#101816"/>
+  <circle cx="45" cy="45" r="7" fill="#f4faf6"/>
+</svg>
