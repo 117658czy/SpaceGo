@@ -1,0 +1,44 @@
+# ---- 构建产物 ----
+build/
+build_*/
+out/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+
+# ---- Visual Studio ----
+.vs/
+.vscode/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.ipch
+
+# ---- 可执行文件与目标文件 ----
+*.exe
+*.dll
+*.lib
+*.exp
+*.obj
+*.o
+*.a
+*.so
+*.dylib
+*.pdb
+
+# ---- 训练与模型产物 ----
+*.pt
+*.pth
+training_output*/
+checkpoints/
+logs/
+
+# ---- 编辑器/系统文件 ----
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
