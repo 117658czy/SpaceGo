@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<!--
+  SpaceGo 维空弈 —— 官方推广落地页
+  ------------------------------------------------------------
+  设计目标：
+  1. 零外部依赖：不引用 CDN、字体、统计脚本，国内网络也能秒开；
+  2. 中英双语：正文同时存在于 DOM 中，通过 html[data-lang] 切换，便于搜索引擎收录；
+  3. 信息诚实：所有数字来自仓库 README 与训练日志，已知缺陷原样公开。
+  部署：本文件与 assets/ 目录一起放到服务器静态目录即可（见 promotion/deploy/）。
+-->
+<html lang="zh-CN" data-lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpaceGo 维空弈 — 从零实现的 AlphaZero 式围棋引擎（HMGS-DP × CA-MOE）</title>
+  <meta name="description" content="SpaceGo 维空弈是一个 C++17/CUDA 从零实现的 AlphaZero 式围棋引擎：HMGS-DP 搜索、CA-MOE 8 专家网络（6200 万参数）、四种训练模式、GTP 协议与 Win32 GUI。代码、训练日志与已知缺陷全部公开。">
+  <meta name="keywords" content="SpaceGo,维空弈,围棋AI,AlphaZero,CUDA,C++17,LibTorch,HMGS-DP,CA-MOE,GTP,开源,MCTS">
+  <meta name="author" content="117658czy">
+  <meta name="theme-color" content="#0a0f0d">
+
+  <!-- 规范链接与社交卡片：当前托管在 GitHub Pages，换到自有服务器时整体替换这三处 -->
+  <link rel="canonical" href="https://117658czy.github.io/SpaceGo/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SpaceGo 维空弈">
+  <meta property="og:title" content="SpaceGo 维空弈 — 从零实现的 AlphaZero 式围棋引擎">
+  <meta property="og:description" content="C++17 / CUDA / LibTorch 全栈自研：HMGS-DP 搜索 + CA-MOE 8 专家网络 + 可复现训练闭环。研究原型，缺陷与实测数据一并公开。">
+  <meta property="og:url" content="https://117658czy.github.io/SpaceGo/">
+  <meta property="og:image" content="https://117658czy.github.io/SpaceGo/assets/og-cover.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SpaceGo 维空弈 — AlphaZero-style Go engine in C++17/CUDA">
+  <meta name="twitter:description" content="HMGS-DP search + CA-MOE 8-expert network + reproducible training loop. Research prototype with honest benchmarks.">
+  <meta name="twitter:image" content="https://117658czy.github.io/SpaceGo/assets/og-cover.png">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="alternate" hreflang="zh-CN" href="https://117658czy.github.io/SpaceGo/">
+  <link rel="alternate" hreflang="en" href="https://117658czy.github.io/SpaceGo/?lang=en">
+
+  <!-- 结构化数据：帮助搜索引擎理解这是开源软件项目 -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "SpaceGo 维空弈",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "Windows, Linux",
+    "programmingLanguage": ["C++", "CUDA"],
+    "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+    "url": "https://github.com/117658czy/SpaceGo",
+    "codeRepository": "https://github.com/117658czy/SpaceGo",
+    "description": "AlphaZero-style Go engine written from scratch in C++17/CUDA: HMGS-DP search, CA-MOE 8-expert network, GTP protocol and training stack.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
+  }
+  </script>
+
+  <style>
+    /* ========== 设计变量 ========== */
+    :root {
+      --bg: #0a0f0d;
+      --bg-soft: #0e1512;
+      --panel: #111a16;
+      --panel-2: #15211c;
+      --border: #1f2e28;
+      --border-strong: #2c4138;
+      --text: #e9f1ec;
+      --muted: #93a79d;
+      --dim: #6b8177;
+      --accent: #3ee08a;
+      --accent-dim: #2aa869;
+      --gold: #d8b26a;
+      --danger: #f0725b;
+      --warn: #e3b04b;
+      --radius: 14px;
+      --mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, "Liberation Mono", Menlo, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+              "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    }
+
+    /* ========== 语言切换：DOM 中同时保留中英文 ========== */
+    html[data-lang="zh"] .lang-en { display: none !important; }
+    html[data-lang="en"] .lang-zh { display: none !important; }
+
+    /* ========== 基础排版 ========== */
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(1100px 600px at 78% -8%, rgba(62, 224, 138, 0.10), transparent 62%),
+        radial-gradient(900px 520px at 8% 8%, rgba(216, 178, 106, 0.07), transparent 60%),
+        var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    h1, h2, h3 { line-height: 1.25; margin: 0 0 12px; letter-spacing: -0.01em; }
+    h2 { font-size: clamp(22px, 3vw, 30px); }
+    h3 { font-size: 18px; }
+    p { margin: 0 0 12px; color: var(--muted); }
+    code { font-family: var(--mono); font-size: 0.92em; }
+
+    .container { width: min(1120px, calc(100% - 44px)); margin: 0 auto; }
+    .section { padding: 74px 0; border-top: 1px solid var(--border); }
+    .section-head { margin-bottom: 34px; }
+    .eyebrow {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      padding: 3px 10px;
+      margin-bottom: 14px;
+    }
+    .lead { font-size: 17px; max-width: 720px; }
+
+    /* ========== 顶栏 ========== */
+    header.topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 15, 13, 0.82);
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      height: 62px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.02em; }
+    .brand-mark {
+      width: 30px; height: 30px;
+      border-radius: 9px;
+      background: linear-gradient(150deg, #2bb771, #14563a);
+      display: grid; place-items: center;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+    }
+    .brand-mark svg { width: 20px; height: 20px; }
+    .brand small { color: var(--dim); font-weight: 500; font-family: var(--mono); font-size: 11px; }
+    .nav-links { margin-left: auto; display: flex; gap: 22px; font-size: 14px; }
+    .nav-links a { color: var(--muted); }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .lang-toggle {
+      border: 1px solid var(--border-strong);
+      background: var(--panel);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-family: var(--mono);
+      cursor: pointer;
+      transition: color .2s, border-color .2s;
+    }
+    .lang-toggle:hover { color: var(--text); border-color: var(--accent-dim); }
+
+    /* ========== 按钮 ========== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 18px;
+      border-radius: 10px;
+      font-weight: 650;
+      font-size: 14.5px;
+      border: 1px solid transparent;
+      transition: transform .15s ease, box-shadow .2s ease, background .2s;
+      white-space: nowrap;
+    }
+    .btn:hover { text-decoration: none; transform: translateY(-1px); }
+    .btn-primary {
+      background: linear-gradient(180deg, #45e894, #23b96c);
+      color: #042414;
+      box-shadow: 0 8px 24px -12px rgba(62, 224, 138, 0.85);
+    }
+    .btn-ghost {
+      background: var(--panel);
+      border-color: var(--border-strong);
+      color: var(--text);
+    }
+    .btn-ghost:hover { border-color: var(--accent-dim); }
+    .btn svg { width: 17px; height: 17px; }
+
+    /* ========== 首屏 ========== */
+    .hero { padding: 68px 0 56px; }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      gap: 52px;
+      align-items: center;
+    }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .chip {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--muted);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 11px;
+    }
+    .chip-live { color: var(--accent); border-color: var(--accent-dim); }
+    .hero h1 {
+      font-size: clamp(34px, 5.4vw, 56px);
+      margin-bottom: 8px;
+      letter-spacing: -0.03em;
+    }
+    .hero h1 .accent {
+      background: linear-gradient(96deg, #3ee08a, #b9e8a0 62%, #d8b26a);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+    .hero-sub { font-size: 17.5px; color: #b7c7bf; max-width: 540px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+    .hero-note {
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--dim);
+      border-left: 2px solid var(--border-strong);
+      padding-left: 12px;
+    }
+
+    /* ========== 棋盘动画 ========== */
+    .board-wrap { position: relative; }
+    .board-frame {
+      position: relative;
+      border-radius: 18px;
+      padding: 14px;
+      background: linear-gradient(160deg, #1a2620, #0f1714);
+      border: 1px solid var(--border-strong);
+      box-shadow: 0 30px 60px -40px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+    .board-frame svg { display: block; width: 100%; height: auto; border-radius: 10px; }
+    .board-caption {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--dim);
+    }
+    .stone {
+      stroke: rgba(0, 0, 0, 0.35);
+      stroke-width: 1;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+    .stone-in { animation: stoneDrop 0.34s cubic-bezier(.2, .9, .3, 1.3) both; }
+    @keyframes stoneDrop {
+      from { opacity: 0; transform: scale(0.35); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .stone-in { animation: none; }
+      html { scroll-behavior: auto; }
+    }
+
+    /* ========== 指标条 ========== */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .metric { background: var(--panel); padding: 22px 20px; }
+    .metric-value {
+      font-family: var(--mono);
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+    .metric-value span { color: var(--accent); }
+    .metric-label { font-size: 12.5px; color: var(--dim); margin-top: 4px; }
+
+    /* ========== 卡片 ========== */
+    .cards { display: grid; gap: 16px; }
+    .cards-2 { grid-template-columns: repeat(2, 1fr); }
+    .cards-4 { grid-template-columns: repeat(4, 1fr); }
+    /* 所有网格子项都允许收缩，避免长代码块在小屏撑出横向滚动条 */
+    .cards > *, .layers > *, .roadmap > *, .metrics > * { min-width: 0; }
+    pre { max-width: 100%; }
+    .card {
+      background: linear-gradient(170deg, var(--panel-2), var(--panel));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      /* 网格项默认 min-width:auto，长代码行会把轨道撑破，这里显式允许收缩 */
+      min-width: 0;
+    }
+    .card h3 { display: flex; align-items: center; gap: 9px; }
+    .card p { font-size: 14.5px; margin-bottom: 0; }
+    .card-num {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      padding: 0 6px;
+    }
+
+    /* ========== 架构图 ========== */
+    .layers { display: grid; gap: 10px; }
+    .layer {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 18px;
+      align-items: center;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent-dim);
+      border-radius: 10px;
+      padding: 15px 18px;
+    }
+    .layer-name { font-weight: 700; font-size: 15px; }
+    .layer-name small { display: block; font-family: var(--mono); font-size: 10.5px; color: var(--dim); font-weight: 400; }
+    .layer-desc { font-size: 13.5px; color: var(--muted); }
+    .layer:nth-child(2) { border-left-color: #4a9de0; }
+    .layer:nth-child(3) { border-left-color: var(--gold); }
+    .layer:nth-child(4) { border-left-color: #a07be8; }
+    .layer:nth-child(5) { border-left-color: #e07ba0; }
+
+    /* ========== 代码块 ========== */
+    .code {
+      position: relative;
+      background: #070c0a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 0 0 14px;
+    }
+    .code-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #0c1310;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--dim);
+    }
+    .code pre {
+      margin: 0;
+      padding: 14px;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.65;
+      color: #cfe6da;
+    }
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border-strong);
+      color: var(--dim);
+      border-radius: 6px;
+      font-size: 11px;
+      padding: 3px 8px;
+      cursor: pointer;
+      font-family: var(--mono);
+    }
+    .copy-btn:hover { color: var(--accent); border-color: var(--accent-dim); }
+
+    /* ========== 表格 ========== */
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 560px; }
+    th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { background: #0d1411; color: var(--muted); font-weight: 600; font-size: 12.5px; }
+    tr:last-child td { border-bottom: none; }
+    td code { color: #a9d9bf; }
+    .badge {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      border-radius: 5px;
+      padding: 2px 6px;
+      white-space: nowrap;
+    }
+    .badge-p0 { background: rgba(240, 114, 91, 0.16); color: var(--danger); border: 1px solid rgba(240, 114, 91, 0.4); }
+    .badge-p1 { background: rgba(227, 176, 75, 0.15); color: var(--warn); border: 1px solid rgba(227, 176, 75, 0.4); }
+    .badge-p2 { background: rgba(147, 167, 157, 0.13); color: var(--muted); border: 1px solid var(--border-strong); }
+
+    /* ========== 时间线 / 路线图 ========== */
+    .roadmap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .roadmap li { margin-bottom: 8px; font-size: 14px; color: var(--muted); }
+    .roadmap ul { margin: 0; padding-left: 18px; }
+    .roadmap .card:first-child { border-top: 3px solid var(--danger); }
+    .roadmap .card:nth-child(2) { border-top: 3px solid var(--warn); }
+    .roadmap .card:nth-child(3) { border-top: 3px solid var(--accent-dim); }
+
+    /* ========== 底部 ========== */
+    .cta-band {
+      background:
+        radial-gradient(700px 320px at 50% 0%, rgba(62, 224, 138, 0.13), transparent 70%),
+        var(--panel);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      padding: 66px 0;
+    }
+    .cta-band h2 { margin-bottom: 10px; }
+    .cta-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+    footer { padding: 34px 0 46px; font-size: 13px; color: var(--dim); }
+    .footer-inner { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 18px; }
+
+    /* ========== 滚动进入动画 ========== */
+    .reveal { opacity: 0; transform: translateY(14px); transition: opacity .55s ease, transform .55s ease; }
+    .reveal.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1; transform: none; transition: none; }
+    }
+
+    /* ========== 响应式 ========== */
+    @media (max-width: 980px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+      .board-wrap { max-width: 480px; }
+      .cards-4 { grid-template-columns: repeat(2, 1fr); }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .roadmap { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+    @media (max-width: 640px) {
+      .section { padding: 52px 0; }
+      .cards-2, .cards-4 { grid-template-columns: 1fr; }
+      .layer { grid-template-columns: 1fr; gap: 6px; }
+      .hero { padding: 40px 0 32px; }
+      .metric-value { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ==================== 顶栏 ==================== -->
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="#top" aria-label="SpaceGo 维空弈 首页">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="2.5" y="2.5" width="19" height="19" rx="2" stroke="#eafff2" stroke-width="1.4" opacity="0.55"/>
+          <circle cx="8" cy="8" r="2.6" fill="#08120d"/>
+          <circle cx="16" cy="16" r="2.6" fill="#f3fbf6"/>
+          <path d="M8 16h8M16 8H8" stroke="#eafff2" stroke-width="1" opacity="0.35"/>
+        </svg>
+      </span>
+      <span>SpaceGo <small>维空弈</small></span>
+    </a>
+    <nav class="nav-links">
+      <a href="#why"><span class="lang-zh">为什么值得看</span><span class="lang-en">Why it matters</span></a>
+      <a href="#architecture"><span class="lang-zh">架构</span><span class="lang-en">Architecture</span></a>
+      <a href="#algorithms"><span class="lang-zh">算法</span><span class="lang-en">Algorithms</span></a>
+      <a href="#status"><span class="lang-zh">实测与缺陷</span><span class="lang-en">Benchmarks</span></a>
+      <a href="#start"><span class="lang-zh">快速开始</span><span class="lang-en">Quick start</span></a>
+    </nav>
+    <button class="lang-toggle" id="langToggle" type="button" aria-label="切换语言 / Switch language">EN</button>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ==================== 首屏 ==================== -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <div class="chip-row">
+          <span class="chip chip-live">● <span class="lang-zh">开源 · AGPL-3.0</span><span class="lang-en">Open source · AGPL-3.0</span></span>
+          <span class="chip">C++17</span>
+          <span class="chip">CUDA</span>
+          <span class="chip">LibTorch</span>
+          <span class="chip">GTP</span>
+        </div>
+
+        <h1>
+          <span class="lang-zh">把一套围棋引擎<br><span class="accent">拆开</span>给你看</span>
+          <span class="lang-en">A Go engine you can<br><span class="accent">read</span>, build and audit</span>
+        </h1>
+
+        <p class="hero-sub">
+          <span class="lang-zh">SpaceGo 维空弈是<b>从零实现</b>的 AlphaZero 式围棋引擎：HMGS-DP 搜索 × CA-MOE 8 专家网络（约 6200 万参数）× 可复现训练闭环。位棋盘、推理、训练、GTP、GUI 全部自研。</span>
+          <span class="lang-en">SpaceGo is an AlphaZero-style Go engine written <b>from scratch</b>: HMGS-DP search × an 8-expert CA-MOE network (~62M parameters) × a reproducible training loop. Bitboards, inference, training, GTP and GUI are all hand-written.</span>
+        </p>
+
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://github.com/117658czy/SpaceGo" target="_blank" rel="noopener">
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+            <span class="lang-zh">查看源码 / Star</span><span class="lang-en">View source / Star</span>
+          </a>
+          <a class="btn btn-ghost" href="#status">
+            <span class="lang-zh">先看实测数据</span><span class="lang-en">See honest benchmarks</span>
+          </a>
+        </div>
+
+        <p class="hero-note">
+          <span class="lang-zh">⚠ 当前定位：<b>研究原型</b>。架构与训练链路已跑通，棋力仍远低于主流引擎；P0/P1 缺陷在下方原样公开。</span>
+          <span class="lang-en">⚠ Status: <b>research prototype</b>. The architecture and training loop work; playing strength is still far below mainstream engines. P0/P1 defects are published below.</span>
+        </p>
+      </div>
+
+      <!-- 装饰性棋盘：真实 SVG 绘制，落子顺序由脚本驱动 -->
+      <div class="board-wrap">
+        <div class="board-frame">
+          <svg id="board" viewBox="0 0 600 600" role="img" aria-label="19 路棋盘演示 / 19x19 board demo">
+            <defs>
+              <radialGradient id="woodGrad" cx="35%" cy="20%" r="90%">
+                <stop offset="0%" stop-color="#e6c489"/>
+                <stop offset="55%" stop-color="#d5ab6a"/>
+                <stop offset="100%" stop-color="#bd9153"/>
+              </radialGradient>
+              <radialGradient id="blackStone" cx="35%" cy="30%" r="75%">
+                <stop offset="0%" stop-color="#4b5551"/>
+                <stop offset="60%" stop-color="#1a2320"/>
+                <stop offset="100%" stop-color="#0a100e"/>
+              </radialGradient>
+              <radialGradient id="whiteStone" cx="35%" cy="30%" r="75%">
+                <stop offset="0%" stop-color="#ffffff"/>
+                <stop offset="70%" stop-color="#eef3f0"/>
+                <stop offset="100%" stop-color="#c9d4ce"/>
+              </radialGradient>
+            </defs>
+            <rect x="0" y="0" width="600" height="600" rx="10" fill="url(#woodGrad)"/>
+            <g id="boardGrid" stroke="#6b4b26" stroke-width="1.15" opacity="0.65"></g>
+            <g id="starPoints" fill="#6b4b26" opacity="0.8"></g>
+            <g id="stones"></g>
+          </svg>
+        </div>
+        <div class="board-caption">
+          <span><span class="lang-zh">19×19 · 6×uint64 位棋盘</span><span class="lang-en">19×19 · 6×uint64 bitboard</span></span>
+          <span><span class="lang-zh">装饰性演示</span><span class="lang-en">decorative demo</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 指标 ==================== -->
+  <section class="container" aria-label="关键指标 / key numbers">
+    <div class="metrics reveal">
+      <div class="metric">
+        <div class="metric-value">62<span>M</span></div>
+        <div class="metric-label"><span class="lang-zh">CA-MOE 参数量（8 专家）</span><span class="lang-en">CA-MOE parameters, 8 experts</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">50<span>k</span></div>
+        <div class="metric-label"><span class="lang-zh">行自研 C++/CUDA（139 个文件）</span><span class="lang-en">lines of C++/CUDA across 139 files</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">4</div>
+        <div class="metric-label"><span class="lang-zh">训练模式（监督 / 自强化 / 二倍体 / ELO 门控）</span><span class="lang-en">training modes (supervised / unsupervised / diploid / ELO-gated)</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">1600</div>
+        <div class="metric-label"><span class="lang-zh">每步模拟数（GTX 1660 Ti 单步 35–55 s）</span><span class="lang-en">simulations per move (35–55 s on GTX 1660 Ti)</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 为什么值得看 ==================== -->
+  <section class="section" id="why">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">01 / Positioning</span>
+        <h2><span class="lang-zh">不是调参脚本，是一整套引擎栈</span><span class="lang-en">Not a tuning script — a full engine stack</span></h2>
+        <p class="lead">
+          <span class="lang-zh">大多数开源围棋项目止步于“训练一个网络”。SpaceGo 把工程链路也补齐了：棋盘、搜索、推理、训练、协议、界面、测试，每一层都能单独拆出来读。</span>
+          <span class="lang-en">Most open-source Go projects stop at "train a network". SpaceGo also ships the engineering chain: board, search, inference, training, protocol, GUI and tests — each layer readable on its own.</span>
+        </p>
+      </div>
+
+      <div class="cards cards-4">
+        <div class="card reveal">
+          <h3><span class="card-num">01</span><span class="lang-zh">两套自研算法</span><span class="lang-en">Two original algorithms</span></h3>
+          <p>
+            <span class="lang-zh">搜索侧 HMGS-DP（换位表 DAG 合并 + 多样性保护），推理侧 CA-MOE（共享主干 + 8 专家头 + 风格门控），通过评估器注入解耦，可独立替换与压测。</span>
+            <span class="lang-en">HMGS-DP on the search side (transposition-table DAG merging + diversity protection), CA-MOE on the inference side (shared trunk + 8 expert heads + style gating). Decoupled via evaluator injection.</span>
+          </p>
+        </div>
+        <div class="card reveal">
+          <h3><span class="card-num">02</span><span class="lang-zh">可复现训练闭环</span><span class="lang-en">Reproducible training loop</span></h3>
+          <p>
+            <span class="lang-zh">自对弈 → 经验回放 → 门控接受/回滚 → KataGo 目差评估 → 教师蒸馏。日志与检查点格式完整保留，数字都能回查。</span>
+            <span class="lang-en">Self-play → replay → gated accept/rollback → KataGo score-gap evaluation → teacher distillation. Logs and checkpoint formats are preserved, so every number is auditable.</span>
+          </p>
+        </div>
+        <div class="card reveal">
+          <h3><span class="card-num">03</span><span class="lang-zh">工程而不只是论文</span><span class="lang-en">Engineering, not a paper</span></h3>
+          <p>
+            <span class="lang-zh">CMake 可裁剪构建（CUDA / LibTorch / 训练 / GUI / 测试独立开关）、失败自动降级、跨平台抽象、中文注释与 17 篇算法文档。</span>
+            <span class="lang-en">Trimmed CMake builds (CUDA / LibTorch / training / GUI / tests toggled independently), graceful fallbacks, cross-platform abstraction, Chinese comments and 17 algorithm documents.</span>
+          </p>
+        </div>
+        <div class="card reveal">
+          <h3><span class="card-num">04</span><span class="lang-zh">诚实的基准</span><span class="lang-en">Honest benchmarks</span></h3>
+          <p>
+            <span class="lang-zh">仓库同时记录“做到了什么”和“还差什么”，包括 −349.5 目的对 KataGo 差距。不用“工业级棋力”做宣传。</span>
+            <span class="lang-en">The repo records both what works and what doesn't — including the −349.5 point gap against KataGo. No "industrial strength" marketing claims.</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 架构 ==================== -->
+  <section class="section" id="architecture">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">02 / Architecture</span>
+        <h2><span class="lang-zh">五层架构，逐层可拆</span><span class="lang-en">Five layers, each replaceable</span></h2>
+      </div>
+
+      <div class="layers reveal">
+        <div class="layer">
+          <div class="layer-name"><span class="lang-zh">表现层</span><span class="lang-en">Presentation</span><small>GUI / GDI+</small></div>
+          <div class="layer-desc"><span class="lang-zh">Win32 + GDI+ 自研界面（独立运行，尚未接入引擎对弈）</span><span class="lang-en">Win32 + GDI+ custom GUI (runs standalone; not yet wired to the engine)</span></div>
+        </div>
+        <div class="layer">
+          <div class="layer-name"><span class="lang-zh">框架层</span><span class="lang-en">Framework</span><small>logger / config / perf</small></div>
+          <div class="layer-desc"><span class="lang-zh">日志、配置、性能监控、AMP 梯度缩放、算法基类</span><span class="lang-en">Logging, config, performance monitoring, AMP gradient scaling, algorithm base classes</span></div>
+        </div>
+        <div class="layer">
+          <div class="layer-name"><span class="lang-zh">决策层</span><span class="lang-en">Decision</span><small>HMGS-DP / CA-MOE</small></div>
+          <div class="layer-desc"><span class="lang-zh">HMGS-DP 搜索主循环、UCT、DAG 合并、多样性保护、元决策</span><span class="lang-en">HMGS-DP search loop, UCT, DAG merging, diversity protection, meta-decision</span></div>
+        </div>
+        <div class="layer">
+          <div class="layer-name"><span class="lang-zh">推理层</span><span class="lang-en">Inference</span><small>LibTorch / CUDA</small></div>
+          <div class="layer-desc"><span class="lang-zh">CA-MOE 前向、门控融合、批量评估、风格条件化</span><span class="lang-en">CA-MOE forward pass, gating fusion, batched evaluation, style conditioning</span></div>
+        </div>
+        <div class="layer">
+          <div class="layer-name"><span class="lang-zh">感知层</span><span class="lang-en">Perception</span><small>bitboard / features</small></div>
+          <div class="layer-desc"><span class="lang-zh">位棋盘、Zobrist 哈希、17 通道特征编码、CUDA 棋盘接口</span><span class="lang-en">Bitboards, Zobrist hashing, 17-channel feature encoding, CUDA board interface</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:22px" class="reveal">
+        <h3><span class="lang-zh">GTP 推理主链路</span><span class="lang-en">The actual GTP inference path</span></h3>
+        <pre class="code"><code style="display:block;padding:16px;color:#cfe6da;overflow-x:auto">spacego.exe --gtp --model=&lt;checkpoint&gt;.pt --simulations=1600
+        │
+        ▼  src/main.cpp                      解析参数 → RunGTP()
+        ▼  src/decision/engine/go_engine.cpp  CA_MOEExpertSystem(8, 19, 0.1, 256)
+        │                                     HMGSDP_Optimized::set_batch_evaluator()
+        ▼  src/go/search/hmgs_dp_optimized.cpp  UCT 下潜 → 批量评估 → top-K 展开 → 回传
+        ▼  src/network/protocol/gtp_protocol.cpp  genmove → "= D4"</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 算法 ==================== -->
+  <section class="section" id="algorithms">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">03 / Algorithms</span>
+        <h2><span class="lang-zh">HMGS-DP × CA-MOE</span><span class="lang-en">HMGS-DP × CA-MOE</span></h2>
+      </div>
+
+      <div class="cards cards-2">
+        <div class="card reveal">
+          <h3><span class="lang-zh">HMGS-DP：分层合并图搜索</span><span class="lang-en">HMGS-DP: merged graph search</span></h3>
+          <p>
+            <span class="lang-zh">以 Zobrist 哈希为键建立换位表，相同局面直接复用节点，搜索结构由树变成 DAG，同一局面只评估一次。已提供虚拟损失与工作窃取队列的骨架，但 GTP 主循环当前仍是单线程批量实现。</span>
+            <span class="lang-en">A Zobrist-keyed transposition table reuses nodes for identical positions, turning the search tree into a DAG so each position is evaluated once. Virtual loss and work-stealing skeletons exist, but the GTP loop is still a single-threaded batched loop.</span>
+          </p>
+          <pre class="code" style="margin-top:14px"><code style="display:block;padding:14px;color:#cfe6da">UCT(i) = Q(i) + C · P(i) · √(ln N / n_i)
+
+tt_ : unordered_map&lt;uint64_t, HMGS_Node*&gt;</code></pre>
+        </div>
+
+        <div class="card reveal">
+          <h3><span class="lang-zh">CA-MOE：因果感知混合专家</span><span class="lang-en">CA-MOE: causal-aware MoE</span></h3>
+          <p>
+            <span class="lang-zh">共享主干（10 残差块 / 256 通道）只算一次，8 组策略头与价值头并行输出；5 维对手棋风向量经零初始化投影叠加为门控偏置，让“按对手风格选专家”成为可学习机制。</span>
+            <span class="lang-en">A shared trunk (10 residual blocks / 256 channels) runs once; 8 policy heads and 8 value heads run in parallel. A 5-dim opponent-style vector, zero-initialised, biases the gate — making expert selection style-conditioned and learnable.</span>
+          </p>
+          <pre class="code" style="margin-top:14px"><code style="display:block;padding:14px;color:#cfe6da">w       = softmax(Gating(features) + style_projection(opponent_style))
+policy  = Σ_e  w_e · policy_e
+value   = Σ_e  w_e · value_e</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 实测与缺陷 ==================== -->
+  <section class="section" id="status">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">04 / Measured &amp; Known limits</span>
+        <h2><span class="lang-zh">实测数据与已知限制</span><span class="lang-en">Measured results and known limits</span></h2>
+        <p class="lead">
+          <span class="lang-zh">下面每个数字都来自仓库内的训练日志与检查点，可自行核对。我们选择公开缺陷，而不是隐藏它们。</span>
+          <span class="lang-en">Every number below comes from training logs and checkpoints inside the repo — verifiable yourself. We publish defects instead of hiding them.</span>
+        </p>
+      </div>
+
+      <div class="table-wrap reveal" style="margin-bottom:26px">
+        <table>
+          <thead>
+            <tr>
+              <th><span class="lang-zh">指标</span><span class="lang-en">Metric</span></th>
+              <th><span class="lang-zh">数值</span><span class="lang-en">Value</span></th>
+              <th><span class="lang-zh">说明</span><span class="lang-en">Notes</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="lang-zh">CA-MOE 参数量</span><span class="lang-en">CA-MOE parameters</span></td>
+              <td><code>≈ 62M</code></td>
+              <td><span class="lang-zh">8 专家，hidden_dim = 256</span><span class="lang-en">8 experts, hidden_dim = 256</span></td>
+            </tr>
+            <tr>
+              <td><span class="lang-zh">检查点大小</span><span class="lang-en">Checkpoint size</span></td>
+              <td><code>≈ 237 MB</code></td>
+              <td><span class="lang-zh">单个 .pt，不随仓库分发</span><span class="lang-en">per .pt file; not distributed with the repo</span></td>
+            </tr>
+            <tr>
+              <td><span class="lang-zh">单步耗时</span><span class="lang-en">Time per move</span></td>
+              <td><code>35–55 s</code></td>
+              <td><span class="lang-zh">GTX 1660 Ti，1600 模拟</span><span class="lang-en">GTX 1660 Ti, 1600 simulations</span></td>
+            </tr>
+            <tr>
+              <td><span class="lang-zh">对 KataGo 目差</span><span class="lang-en">Score gap vs KataGo</span></td>
+              <td><code>−349.5 <span class="lang-zh">目</span><span class="lang-en">points</span></code></td>
+              <td><span class="lang-zh">最佳观测值，KataGo 10 visits</span><span class="lang-en">best observed, KataGo at 10 visits</span></td>
+            </tr>
+            <tr>
+              <td><span class="lang-zh">代码规模</span><span class="lang-en">Code size</span></td>
+              <td><code>≈ 50k <span class="lang-zh">行 / 139 文件</span><span class="lang-en">lines / 139 files</span></code></td>
+              <td><span class="lang-zh">含 GUI 与测试</span><span class="lang-en">including GUI and tests</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap reveal">
+        <table>
+          <thead>
+            <tr>
+              <th><span class="lang-zh">级别</span><span class="lang-en">Level</span></th>
+              <th><span class="lang-zh">问题</span><span class="lang-en">Issue</span></th>
+              <th><span class="lang-zh">影响</span><span class="lang-en">Impact</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-p0">P0</span></td>
+              <td><span class="lang-zh">批量收集按 batch_size 消耗迭代预算，同批内重复选中同一叶子</span><span class="lang-en">Batch collection consumes the iteration budget by batch_size and can select the same leaf twice</span></td>
+              <td><span class="lang-zh"><code>--simulations=800</code> 实际只有约 6–7 次有效展开</span><span class="lang-en"><code>--simulations=800</code> yields only ~6–7 effective expansions</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-p0">P0</span></td>
+              <td><span class="lang-zh">UCT 直接最大化子节点视角价值，父节点未取反</span><span class="lang-en">UCT maximises child-perspective value without flipping at the parent</span></td>
+              <td><span class="lang-zh">选择方向错误，搜索统计失真</span><span class="lang-en">Wrong selection direction; statistics skew</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-p0">P0</span></td>
+              <td><span class="lang-zh">白方价值翻转判断与 <code>StoneColor::WHITE == 2</code> 不一致</span><span class="lang-en">White-side value flip check disagrees with <code>StoneColor::WHITE == 2</code></span></td>
+              <td><span class="lang-zh">白方行棋时价值未翻转</span><span class="lang-en">Values are not flipped when White is to play</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-p1">P1</span></td>
+              <td><span class="lang-zh"><code>genmove</code> 返回 pass 时未切换行棋方 / 累加连续 pass</span><span class="lang-en"><code>genmove</code> returning pass does not switch sides or count consecutive passes</span></td>
+              <td><span class="lang-zh">连续两 pass 无法正常终局</span><span class="lang-en">Two consecutive passes cannot end the game properly</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-p1">P1</span></td>
+              <td><span class="lang-zh"><code>boardsize</code> 接受 9/13，但坐标、编码、策略索引按 19 路硬编码</span><span class="lang-en"><code>boardsize</code> accepts 9/13, but coordinates, encoding and policy indices are hard-coded for 19×19</span></td>
+              <td><span class="lang-zh">非 19 路对局会错位</span><span class="lang-en">Non-19×19 games misalign</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-p1">P1</span></td>
+              <td><span class="lang-zh">CUDA 棋盘内核仍是接口占位（气数恒 0）</span><span class="lang-en">CUDA board kernels are placeholders (liberties always 0)</span></td>
+              <td><span class="lang-zh">GPU 批量棋盘尚不可用于实战</span><span class="lang-en">GPU batched board computation is not yet usable in play</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-p2">P2</span></td>
+              <td><span class="lang-zh">17 通道输入仅填充前 3 个平面</span><span class="lang-en">Only the first 3 of 17 input planes are filled</span></td>
+              <td><span class="lang-zh">输入表达力受限（与训练约定一致）</span><span class="lang-en">Limited input expressiveness (consistent with training)</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-p2">P2</span></td>
+              <td><span class="lang-zh">GUI 尚未接入引擎；<code>time_settings</code> / <code>stop</code> 未实现</span><span class="lang-en">GUI not wired to the engine; <code>time_settings</code> / <code>stop</code> unimplemented</span></td>
+              <td><span class="lang-zh">界面独立运行，不参与对弈</span><span class="lang-en">GUI runs standalone, not for playing</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 快速开始 ==================== -->
+  <section class="section" id="start">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">05 / Quick start</span>
+        <h2><span class="lang-zh">五分钟内跑起来</span><span class="lang-en">Up and running in five minutes</span></h2>
+        <p class="lead">
+          <span class="lang-zh">不装 CUDA、不装 LibTorch 也能编译出规则引擎主体；要跑神经网络再补上 LibTorch 2.6.0+cu124。</span>
+          <span class="lang-en">You can build the rule-based engine without CUDA or LibTorch; add LibTorch 2.6.0+cu124 only for neural inference.</span>
+        </p>
+      </div>
+
+      <div class="cards cards-2">
+        <div class="reveal">
+          <div class="code">
+            <div class="code-head">
+              <span>Windows · 完整构建</span>
+              <button class="copy-btn" type="button" data-copy="#code-full">copy</button>
+            </div>
+            <pre id="code-full"><code>git clone https://github.com/117658czy/SpaceGo.git
+cd SpaceGo
+
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
+      -DLIBTORCH_ROOT="D:/libtorch-win-shared-with-deps-2.6.0+cu124/libtorch"
+cmake --build build --config Release
+
+# 产物 / outputs: build/Release/spacego.exe, spacego_train.exe, SpaceGo_GUI.exe</code></pre>
+          </div>
+        </div>
+
+        <div class="reveal">
+          <div class="code">
+            <div class="code-head">
+              <span>最小构建 · 只需要编译器</span>
+              <button class="copy-btn" type="button" data-copy="#code-min">copy</button>
+            </div>
+            <pre id="code-min"><code>cmake -S . -B build -DUSE_CUDA=OFF -DUSE_LIBTORCH=OFF -DBUILD_TRAIN=OFF -DBUILD_GUI=OFF
+cmake --build build --config Release
+
+# 启动 GTP
+.\spacego.exe --gtp --simulations=1600</code></pre>
+          </div>
+
+          <div class="code">
+            <div class="code-head">
+              <span>GTP 交互示意（格式真实，棋力未达标）</span>
+              <button class="copy-btn" type="button" data-copy="#code-gtp">copy</button>
+            </div>
+            <pre id="code-gtp"><code>name
+= SpaceGo
+
+boardsize 19
+= 
+
+clear_board
+= 
+
+genmove b
+= D4</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <p style="margin-top:18px" class="reveal">
+        <span class="lang-zh">对接 Sabaki / Lizzie：引擎路径填 <code>spacego.exe</code>，启动参数 <code>--gtp</code>（需要神经网络时追加 <code>--model=&lt;checkpoint&gt;.pt</code>）。模型约 237 MB，仓库不分发，可用 <code>spacego_train.exe</code> 自行训练。</span>
+        <span class="lang-en">For Sabaki / Lizzie: point the engine to <code>spacego.exe</code> with <code>--gtp</code> (add <code>--model=&lt;checkpoint&gt;.pt</code> for neural inference). Checkpoints are ~237 MB and not shipped; train your own with <code>spacego_train.exe</code>.</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ==================== 路线图 ==================== -->
+  <section class="section" id="roadmap">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">06 / Roadmap</span>
+        <h2><span class="lang-zh">接下来做什么</span><span class="lang-en">What happens next</span></h2>
+      </div>
+
+      <div class="roadmap">
+        <div class="card reveal">
+          <h3><span class="lang-zh">近期 · 正确性优先</span><span class="lang-en">Now · correctness first</span></h3>
+          <ul>
+            <li><span class="lang-zh">修复搜索预算、UCT 价值方向、白方价值翻转三处 P0</span><span class="lang-en">Fix the three P0s: search budget, UCT value direction, White value flip</span></li>
+            <li><span class="lang-zh">统一 StoneColor / ±1 价值约定，补对称性测试</span><span class="lang-en">Unify StoneColor / ±1 conventions, add symmetry tests</span></li>
+            <li><span class="lang-zh">修复 GTP pass 与行棋方同步，补齐 stop / time_left</span><span class="lang-en">Fix GTP pass and turn sync; implement stop / time_left</span></li>
+          </ul>
+        </div>
+        <div class="card reveal">
+          <h3><span class="lang-zh">中期 · 棋力与性能</span><span class="lang-en">Next · strength &amp; speed</span></h3>
+          <ul>
+            <li><span class="lang-zh">扩展 17 通道特征（历史、气、打劫、征子），重训基线</span><span class="lang-en">Extend features (history, liberties, ko, ladders) and retrain</span></li>
+            <li><span class="lang-zh">把 CUDA 棋盘内核从占位升级为真实批量实现</span><span class="lang-en">Upgrade CUDA board kernels from placeholders to real batched kernels</span></li>
+            <li><span class="lang-zh">让批量推理在 GTP 路径默认生效，压测节点/秒</span><span class="lang-en">Enable batched inference by default on the GTP path, benchmark nodes/sec</span></li>
+          </ul>
+        </div>
+        <div class="card reveal">
+          <h3><span class="lang-zh">长期 · 生态</span><span class="lang-en">Later · ecosystem</span></h3>
+          <ul>
+            <li><span class="lang-zh">发布可下载的预训练检查点与基准对局</span><span class="lang-en">Publish downloadable checkpoints and benchmark games</span></li>
+            <li><span class="lang-zh">GUI 通过 GTP 子进程接入引擎</span><span class="lang-en">Wire the GUI to the engine via a GTP subprocess</span></li>
+            <li><span class="lang-zh">建立 CI（Windows / Linux 构建 + 单测 + GTP 冒烟）</span><span class="lang-en">Set up CI (Windows/Linux builds, unit tests, GTP smoke test)</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <p style="margin-top:20px" class="reveal">
+        <span class="lang-zh"><b>Good first issues</b>：文档纠错、GTP 命令补全、单元测试、基准脚本、英文文档翻译 —— 适合第一次参与开源的人。</span>
+        <span class="lang-en"><b>Good first issues</b>: doc fixes, GTP command completion, unit tests, benchmark scripts, English docs — ideal for a first open-source contribution.</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ==================== CTA ==================== -->
+  <section class="cta-band">
+    <div class="container">
+      <h2><span class="lang-zh">如果它对你有启发，点一个 Star</span><span class="lang-en">If it sparks something, leave a star</span></h2>
+      <p>
+        <span class="lang-zh">Star 是这个项目继续公开训练日志、发布模型与基准数据的直接动力。也欢迎直接开 Issue 指出文档或代码里的错误。</span>
+        <span class="lang-en">Stars are what keep the training logs, model releases and benchmark data public. Issues pointing out doc or code errors are equally welcome.</span>
+      </p>
+      <div class="cta-actions">
+        <a class="btn btn-primary" href="https://github.com/117658czy/SpaceGo" target="_blank" rel="noopener">
+          <span class="lang-zh">GitHub 仓库</span><span class="lang-en">GitHub repository</span>
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/117658czy/SpaceGo/releases/tag/v1.0.0" target="_blank" rel="noopener">
+          <span class="lang-zh">v1.0.0 发布说明</span><span class="lang-en">v1.0.0 release notes</span>
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/117658czy/SpaceGo/issues?q=is%3Aissue+is%3Aopen" target="_blank" rel="noopener">
+          <span class="lang-zh">已知问题列表</span><span class="lang-en">Open issues</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ==================== 底部 ==================== -->
+<footer>
+  <div class="container footer-inner">
+    <div>
+      <span class="lang-zh">SpaceGo 维空弈 · 以 AGPL-3.0 开源 · 研究原型，非生产棋力</span>
+      <span class="lang-en">SpaceGo · AGPL-3.0 · research prototype, not production strength</span>
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/117658czy/SpaceGo" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/117658czy/SpaceGo/blob/main/docs/技术文档/算法说明.md" target="_blank" rel="noopener"><span class="lang-zh">算法说明</span><span class="lang-en">Algorithm notes</span></a>
+      <a href="mailto:3040811677@qq.com">3040811677@qq.com</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ==========================================================================
+   页面脚本：全部原生实现，无第三方依赖
+   1) 棋盘网格与装饰性落子动画
+   2) 中英文切换（可被 ?lang=en 覆盖，并记住用户选择）
+   3) 代码块复制
+   4) 滚动进入动画
+   ========================================================================== */
+(function () {
+  'use strict';
+
+  /* ---------- 1. 棋盘绘制 ---------- */
+  const BOARD_PAD = 30;                 // 棋盘四周留白（viewBox 单位）
+  const BOARD_SIZE = 600;               // viewBox 边长
+  const GRID_COUNT = 19;                // 19 路
+  const STEP = (BOARD_SIZE - BOARD_PAD * 2) / (GRID_COUNT - 1);
+  const STAR_POINTS = [3, 9, 15];       // 星位（0 基索引）
+
+  const gridGroup = document.getElementById('boardGrid');
+  const starGroup = document.getElementById('starPoints');
+  const stoneGroup = document.getElementById('stones');
+
+  /**
+   * 把 0 基索引坐标换算成 SVG 像素坐标。
+   * @param {number} index 0..18
+   * @returns {number} 像素坐标
+   */
+  function toPx(index) {
+    return BOARD_PAD + index * STEP;
+  }
+
+  // 18 条横线 + 18 条纵线（每条线从第一条到最后一格）
+  if (gridGroup) {
+    const fragment = document.createDocumentFragment();
+    for (let i = 0; i < GRID_COUNT; i++) {
+      const pos = toPx(i);
+      const hLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      hLine.setAttribute('x1', toPx(0));
+      hLine.setAttribute('y1', pos);
+      hLine.setAttribute('x2', toPx(GRID_COUNT - 1));
+      hLine.setAttribute('y2', pos);
+      fragment.appendChild(hLine);
+
+      const vLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      vLine.setAttribute('x1', pos);
+      vLine.setAttribute('y1', toPx(0));
+      vLine.setAttribute('x2', pos);
+      vLine.setAttribute('y2', toPx(GRID_COUNT - 1));
+      fragment.appendChild(vLine);
+    }
+    gridGroup.appendChild(fragment);
+
+    // 九个星位圆点（只取 3/9/15 的交点，排除边角重复）
+    const starFragment = document.createDocumentFragment();
+    STAR_POINTS.forEach(function (row) {
+      STAR_POINTS.forEach(function (col) {
+        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('cx', toPx(col));
+        dot.setAttribute('cy', toPx(row));
+        dot.setAttribute('r', 3);
+        starFragment.appendChild(dot);
+      });
+    });
+    starGroup.appendChild(starFragment);
+  }
+
+  // 装饰性落子序列：[行, 列, 'b'|'w']，按顺序播放后整体淡出循环
+  const MOVES = [
+    [3, 15, 'b'], [15, 3, 'w'], [15, 15, 'b'], [3, 3, 'w'],
+    [2, 13, 'b'], [13, 5, 'w'], [13, 13, 'b'], [5, 5, 'w'],
+    [9, 9, 'w'], [9, 11, 'b'], [8, 10, 'w'], [10, 9, 'b']
+  ];
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /**
+   * 在棋盘上落一颗子。
+   * @param {number} row 行索引
+   * @param {number} col 列索引
+   * @param {string} color 'b' 或 'w'
+   * @param {boolean} animate 是否播放落子动画
+   * @returns {SVGCircleElement} 生成的棋子元素
+   */
+  function placeStone(row, col, color, animate) {
+    const stone = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    stone.setAttribute('cx', toPx(col));
+    stone.setAttribute('cy', toPx(row));
+    stone.setAttribute('r', 13);
+    stone.setAttribute('fill', color === 'b' ? 'url(#blackStone)' : 'url(#whiteStone)');
+    stone.setAttribute('class', 'stone' + (animate ? ' stone-in' : ''));
+    stoneGroup.appendChild(stone);
+    return stone;
+  }
+
+  /**
+   * 循环播放装饰性棋局；每轮结束后淡出并重新开始。
+   */
+  function playBoardAnimation() {
+    let index = 0;
+    const interval = window.setInterval(function () {
+      if (index >= MOVES.length) {
+        window.clearInterval(interval);
+        // 停留 2.2 秒后淡出并重播
+        window.setTimeout(function () {
+          stoneGroup.style.transition = 'opacity .7s ease';
+          stoneGroup.style.opacity = '0';
+          window.setTimeout(function () {
+            stoneGroup.innerHTML = '';
+            stoneGroup.style.opacity = '1';
+            playBoardAnimation();
+          }, 720);
+        }, 2200);
+        return;
+      }
+      const move = MOVES[index++];
+      placeStone(move[0], move[1], move[2], true);
+    }, 620);
+  }
+
+  if (stoneGroup) {
+    if (reduceMotion) {
+      // 减少动效偏好：直接绘制最终局面
+      MOVES.forEach(function (move) { placeStone(move[0], move[1], move[2], false); });
+    } else {
+      // 首屏外不可见时不必播放，进入视口后再启动
+      window.setTimeout(playBoardAnimation, 400);
+    }
+  }
+
+  /* ---------- 2. 语言切换 ---------- */
+  const html = document.documentElement;
+  const toggle = document.getElementById('langToggle');
+
+  /**
+   * 应用语言并同步按钮文案。
+   * @param {'zh'|'en'} lang 目标语言
+   */
+  function applyLang(lang) {
+    html.setAttribute('data-lang', lang);
+    html.setAttribute('lang', lang === 'zh' ? 'zh-CN' : 'en');
+    if (toggle) {
+      toggle.textContent = lang === 'zh' ? 'EN' : '中文';
+    }
+    try {
+      window.localStorage.setItem('spacego.lang', lang);
+    } catch (error) {
+      // 隐私模式下 localStorage 可能抛异常，忽略即可
+    }
+  }
+
+  // 优先级：URL 参数 > 本地记忆 > 浏览器语言
+  const urlLang = new URLSearchParams(window.location.search).get('lang');
+  let initialLang = 'zh';
+  if (urlLang === 'en' || urlLang === 'zh') {
+    initialLang = urlLang;
+  } else {
+    let stored = null;
+    try {
+      stored = window.localStorage.getItem('spacego.lang');
+    } catch (error) {
+      stored = null;
+    }
+    if (stored === 'en' || stored === 'zh') {
+      initialLang = stored;
+    } else {
+      initialLang = (navigator.language || 'zh').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en';
+    }
+  }
+  applyLang(initialLang);
+
+  if (toggle) {
+    toggle.addEventListener('click', function () {
+      applyLang(html.getAttribute('data-lang') === 'zh' ? 'en' : 'zh');
+    });
+  }
+
+  /* ---------- 3. 代码复制 ---------- */
+  document.querySelectorAll('.copy-btn').forEach(function (button) {
+    button.addEventListener('click', function () {
+      const target = document.querySelector(button.getAttribute('data-copy'));
+      if (!target) return;
+      const text = target.innerText;
+      const done = function () {
+        const original = button.textContent;
+        button.textContent = 'copied';
+        window.setTimeout(function () { button.textContent = original; }, 1400);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function () {
+          // 回退：旧浏览器 / 非安全上下文
+          fallbackCopy(text, done);
+        });
+      } else {
+        fallbackCopy(text, done);
+      }
+    });
+  });
+
+  /**
+   * 兼容非 HTTPS 环境的复制实现。
+   * @param {string} text 待复制文本
+   * @param {Function} onDone 成功回调
+   */
+  function fallbackCopy(text, onDone) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      onDone();
+    } catch (error) {
+      // 复制失败时保持静默，避免打断阅读
+    }
+    document.body.removeChild(textarea);
+  }
+
+  /* ---------- 4. 滚动进入动画 ---------- */
+  const revealItems = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window && !reduceMotion) {
+    const observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    revealItems.forEach(function (item) { observer.observe(item); });
+  } else {
+    revealItems.forEach(function (item) { item.classList.add('in'); });
+  }
+})();
+</script>
+
+</body>
+</html>
