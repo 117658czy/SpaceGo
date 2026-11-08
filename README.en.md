@@ -14,6 +14,10 @@ C++17 · CUDA · LibTorch · GTP · ~50k lines of hand-written code
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Website](https://img.shields.io/badge/Website-online-3ee08a.svg)](https://117658czy.github.io/SpaceGo/)
 
+<a href="https://117658czy.github.io/SpaceGo/">
+  <img src="https://117658czy.github.io/SpaceGo/assets/og-cover.png" alt="SpaceGo — a from-scratch Go engine: architecture, two original algorithms, verifiable benchmarks" width="820">
+</a>
+
 [Quick start](#quick-start) · [Algorithms](#core-algorithms-and-innovations) · [Inference path](#inference-path-and-model-files) · [Training](#training-system) · [Benchmarks](#measured-results-and-current-status) · [Roadmap](#roadmap-and-contribution-areas)
 
 [中文文档](README.md)
