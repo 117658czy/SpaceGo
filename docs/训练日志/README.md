@@ -63,7 +63,9 @@ grep -ho '目差=-\?[0-9.]*目' 训练日志/*.txt | sort | uniq -c
 | 数字 | 出现位置 |
 |------|---------|
 | −349.5 目（最优观测） | `train_out_broken_0913.txt:139`（下一行 `:141` 记录该值被接受，累积 ELO 920） |
-| −365.5 目 | `train_out_scale.txt:50`、`train_out_scale.txt:83`、`diag_fresh.txt:50` |
+| −365.5 目 | `train_out_scale.txt:50`、`train_out_scale.txt:83` |
+| −364.5 目 | `diag_fresh.txt:50` |
+| −366.5 目（区间下界） | `train_out_broken_0913.txt:73` |
 | −352.5 目 | `train_out_scale.txt:162` |
 | −357.0 目（历史最佳） | `train_out_r6_10_powerloss.txt:32` |
 | 1600 模拟 / 步 | `train_out_broken_0913.txt:18`、`diag_fresh.txt:18`、`train_out_noisefloor.txt:20` |
