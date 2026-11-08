@@ -13,6 +13,7 @@ C++17 · CUDA · LibTorch · GTP · ~50k lines of hand-written code
 [![GTP](https://img.shields.io/badge/Protocol-GTP-4B8BBE.svg)](src/network/protocol/gtp_protocol.cpp)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Website](https://img.shields.io/badge/Website-online-3ee08a.svg)](https://117658czy.github.io/SpaceGo/)
+[![verify-docs](https://github.com/117658czy/SpaceGo/actions/workflows/verify-docs.yml/badge.svg)](https://github.com/117658czy/SpaceGo/actions/workflows/verify-docs.yml)
 
 <a href="https://117658czy.github.io/SpaceGo/">
   <img src="https://117658czy.github.io/SpaceGo/assets/og-cover.png" alt="SpaceGo — a from-scratch Go engine: architecture, two original algorithms, verifiable benchmarks" width="820">
