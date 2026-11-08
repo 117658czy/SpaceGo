@@ -561,7 +561,7 @@
       </div>
       <div class="metric">
         <div class="metric-value">1600</div>
-        <div class="metric-label"><span class="lang-zh">每步模拟数（GTX 1660 Ti 单步 35–55 s）</span><span class="lang-en">simulations per move (35–55 s on GTX 1660 Ti)</span></div>
+        <div class="metric-label"><span class="lang-zh">每步模拟数（GTX 1660 Ti）</span><span class="lang-en">simulations per move (GTX 1660 Ti)</span></div>
       </div>
     </div>
   </section>
@@ -696,8 +696,8 @@ value   = Σ_e  w_e · value_e</code></pre>
         <span class="eyebrow">04 / Measured &amp; Known limits</span>
         <h2><span class="lang-zh">实测数据与已知限制</span><span class="lang-en">Measured results and known limits</span></h2>
         <p class="lead">
-          <span class="lang-zh">下面每个数字都来自仓库内的训练日志与检查点，可自行核对。我们选择公开缺陷，而不是隐藏它们。</span>
-          <span class="lang-en">Every number below comes from training logs and checkpoints inside the repo — verifiable yourself. We publish defects instead of hiding them.</span>
+          <span class="lang-zh">下面每个数字都出自仓库内的<a href="训练日志/README.md">原始训练日志</a>，并标注了文件与行号，可自行核对。我们选择公开缺陷，而不是隐藏它们。</span>
+          <span class="lang-en">Every number below comes from the <a href="训练日志/README.md">raw training logs</a> committed in this repo, each tagged with file and line number so you can verify it yourself. We publish defects instead of hiding them.</span>
         </p>
       </div>
 
@@ -722,14 +722,14 @@ value   = Σ_e  w_e · value_e</code></pre>
               <td><span class="lang-zh">单个 .pt，不随仓库分发</span><span class="lang-en">per .pt file; not distributed with the repo</span></td>
             </tr>
             <tr>
-              <td><span class="lang-zh">单步耗时</span><span class="lang-en">Time per move</span></td>
-              <td><code>35–55 s</code></td>
-              <td><span class="lang-zh">GTX 1660 Ti，1600 模拟</span><span class="lang-en">GTX 1660 Ti, 1600 simulations</span></td>
+              <td><span class="lang-zh">自对弈单局耗时</span><span class="lang-en">Self-play time per game</span></td>
+              <td><code>29–76 s</code></td>
+              <td><span class="lang-zh">GTX 1660 Ti，1600 模拟；日志记的是单局耗时而非单步</span><span class="lang-en">GTX 1660 Ti, 1600 simulations; the logs time a full game, not one move</span></td>
             </tr>
             <tr>
               <td><span class="lang-zh">对 KataGo 目差</span><span class="lang-en">Score gap vs KataGo</span></td>
-              <td><code>−349.5 <span class="lang-zh">目</span><span class="lang-en">points</span></code></td>
-              <td><span class="lang-zh">最佳观测值，KataGo 10 visits</span><span class="lang-en">best observed, KataGo at 10 visits</span></td>
+              <td><code>−366.5 ~ −349.5 <span class="lang-zh">目</span><span class="lang-en">points</span></code></td>
+              <td><span class="lang-zh">8 次单局评估，最优 −349.5 目，KataGo 10 visits</span><span class="lang-en">8 single-game evaluations; best −349.5, KataGo at 10 visits</span></td>
             </tr>
             <tr>
               <td><span class="lang-zh">代码规模</span><span class="lang-en">Code size</span></td>
