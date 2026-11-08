@@ -1,0 +1,40 @@
+# 文档一致性校验：保证 README / 技术文档里公开的数字与仓库内训练日志不漂移
+# 触发：推送到 main、以及任何 PR；也可在 Actions 页面手动触发
+name: verify-docs
+
+on:
+  push:
+    branches: [main]
+    # 仅在文档与日志变动时运行，避免每个代码提交都跑
+    paths:
+      - "README.md"
+      - "README.en.md"
+      - "docs/**"
+      - "tools/verify_docs.py"
+      - ".github/workflows/verify-docs.yml"
+  pull_request:
+    paths:
+      - "README.md"
+      - "README.en.md"
+      - "docs/**"
+      - "tools/verify_docs.py"
+      - ".github/workflows/verify-docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 准备 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 校验相对链接、日志引用行号与目差区间
+        run: python tools/verify_docs.py
