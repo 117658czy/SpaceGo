@@ -14,6 +14,10 @@ C++17 · CUDA · LibTorch · GTP · 约 5 万行自研代码
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Website](https://img.shields.io/badge/Website-online-3ee08a.svg)](https://117658czy.github.io/SpaceGo/)
 
+<a href="https://117658czy.github.io/SpaceGo/">
+  <img src="https://117658czy.github.io/SpaceGo/assets/og-cover.png" alt="SpaceGo 维空弈 — 从零实现的围棋引擎：架构、两套自研算法与可核对的实测数据" width="820">
+</a>
+
 **中文** · [English](README.en.md) · [项目主页](https://117658czy.github.io/SpaceGo/)
 
 [快速开始](#快速开始) · [核心算法](#核心算法与创新点) · [推理主链路](#推理主链路与模型文件) · [训练体系](#训练体系) · [实测数据](#实测数据与当前状态) · [路线图](#路线图与贡献方向)
