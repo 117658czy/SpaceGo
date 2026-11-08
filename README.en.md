@@ -28,9 +28,10 @@ C++17 · CUDA · LibTorch · GTP · ~50k lines of hand-written code
 > is still far below mainstream engines, and the search plus the feature encoding have known defects —
 > all of them are documented below with their impact, instead of being hidden behind marketing copy.
 >
-> Measured: **−349.5 points** against KataGo at 10 visits, 35–55 s per move at 1600 simulations on a
-> GTX 1660 Ti. If you want a strong opponent, use KataGo. If you want a complete engine stack you can
-> read, build and audit, keep reading.
+> Measured: **−349.5 points** best observed against KataGo at 10 visits (range −366.5 to −349.5 across
+> 8 evaluations), 29–76 s per self-play game at 1600 simulations on a GTX 1660 Ti. Every figure is
+> traceable to a line in [`docs/训练日志/`](docs/训练日志/). If you want a strong opponent, use KataGo.
+> If you want a complete engine stack you can read, build and audit, keep reading.
 
 ---
 
@@ -42,8 +43,8 @@ C++17 · CUDA · LibTorch · GTP · ~50k lines of hand-written code
 - **Two original algorithm skeletons.** HMGS-DP on the search side, CA-MOE on the inference side.
   They are decoupled through evaluator injection, so each can be replaced or benchmarked independently.
 - **A reproducible training loop.** Self-play → experience replay → gated accept/rollback → KataGo
-  score-gap evaluation → teacher distillation. Logs and checkpoint formats are preserved, so every
-  number in this README can be traced back to a training run.
+  score-gap evaluation → teacher distillation. The raw console logs are committed under
+  [`docs/训练日志/`](docs/训练日志/), so every number in this README can be traced to a specific line.
 - **Engineering over paper-writing.** Trimmed CMake builds (CUDA / LibTorch / training / GUI / tests
   are independent switches), graceful degradation on failure, cross-platform abstraction, Chinese
   comments and 17 algorithm documents.
@@ -375,8 +376,9 @@ The numbers below come from training logs and checkpoints inside this repository
 | CA-MOE parameters | ~62M | 8 experts, `hidden_dim=256` |
 | Checkpoint size | ~237 MB | per `*.pt` |
 | Simulations per move | 1600 (configurable) | ELO-gated training configuration |
-| Time per move | ~35–55 s | GTX 1660 Ti, 1600 simulations |
-| Score gap vs KataGo | −350 to −368 points | best observed **−349.5** (KataGo at 10 visits) |
+| Self-play time per game | ~29–76 s (36 games, median 63 s) | GTX 1660 Ti; the logs record per-game time, not per-move |
+| KataGo eval time per game | ~44–182 s (13 evals, median 55 s) | includes the 10-visit game and final scoring |
+| Score gap vs KataGo | −366.5 to −349.5 points | best observed **−349.5** (KataGo at 10 visits) |
 | Code size | ~50k lines / 139 C++/CUDA files | including GUI and tests |
 
 **Current positioning: research prototype.** The architecture, the training loop and the engineering
